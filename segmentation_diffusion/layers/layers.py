@@ -130,8 +130,7 @@ class SegmentationUnet(nn.Module):
     def __init__(self, num_classes, dim, num_steps, dim_mults=(1, 2, 4, 8), groups = 8, dropout=0.):
         super().__init__()
         dims = [dim, *map(lambda m: dim * m, dim_mults)]
-        in_out = list(zip(dims[:-1], dims[1:]))
-
+        in_out = list(zip(dims[:-1], dims[1:]))        
         self.embedding = nn.Embedding(num_classes, dim)
         self.dim = dim
         self.num_classes = num_classes
@@ -182,13 +181,14 @@ class SegmentationUnet(nn.Module):
         )
 
     def forward(self, time, x):
+
         x_shape = x.size()[1:]
         if len(x.size()) == 3:
             x = x.unsqueeze(1)
 
         B, C, H, W = x.size()
         x = self.embedding(x)
-
+        
         assert x.shape == (B, C, H, W, self.dim)
 
         x = x.permute(0, 1, 4, 2, 3)

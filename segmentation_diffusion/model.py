@@ -23,7 +23,7 @@ def get_model(args, data_shape):
     data_shape = torch.Size(data_shape)
 
     current_shape = data_shape
-
+    
     if (data_shape[-1] // 4) % 2 == 0:
         dim_mults = (1, 2, 4, 8)
     else:

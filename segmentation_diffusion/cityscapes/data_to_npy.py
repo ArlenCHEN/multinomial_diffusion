@@ -15,11 +15,11 @@ def main(H, W):
         ToTensorNoNorm()])
 
     data_set = Cityscapes(
-            root='./', split='train', mode='fine', target_type='semantic',
+            root='/media/zheng/Cookie/Datasets/Segmentation/Cityscapes', split='train', mode='fine', target_type='semantic',
             transform=data_transforms, target_transform=None, transforms=None,
             only_categories=False)
     test_set = Cityscapes(
-        root='./', split='val', mode='fine', target_type='semantic',
+        root='/media/zheng/Cookie/Datasets/Segmentation/Cityscapes', split='val', mode='fine', target_type='semantic',
         transform=data_transforms, target_transform=None, transforms=None,
         only_categories=False)
 

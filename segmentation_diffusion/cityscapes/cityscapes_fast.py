@@ -46,10 +46,10 @@ class CityscapesFast(data.Dataset):
         img = self.data[index]
 
         img = img.long()
-
+        
         if self.only_categories:
             img = map_id_to_category_id[img]
-
+        
         if self.transform:
             assert img.size(0) == 1
             img = img[0]
@@ -64,7 +64,7 @@ class CityscapesFast(data.Dataset):
             img = img.unsqueeze(0)
 
         # mock_label = torch.zeros_like(img[0, 0]).int()
-
+        
         return img
 
     def __len__(self):
