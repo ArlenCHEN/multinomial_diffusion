@@ -56,14 +56,15 @@ def log_categorical(log_x_start, log_prob):
 def index_to_log_onehot(x, num_classes):
     assert x.max().item() < num_classes, \
         f'Error: {x.max().item()} >= {num_classes}'
-    x_onehot = F.one_hot(x, num_classes)
 
+    x_onehot = F.one_hot(x, num_classes)
+    
     permute_order = (0, -1) + tuple(range(1, len(x.size())))
 
     x_onehot = x_onehot.permute(permute_order)
 
     log_x = torch.log(x_onehot.float().clamp(min=1e-30))
-
+    
     return log_x
 
 
@@ -249,9 +250,9 @@ class MultinomialDiffusion(torch.nn.Module):
         return log_sample
 
     def q_sample(self, log_x_start, t):
-        log_EV_qxt_x0 = self.q_pred(log_x_start, t)
+        log_EV_qxt_x0 = self.q_pred(log_x_start, t) # q(x_t|x_0)
 
-        log_sample = self.log_sample_categorical(log_EV_qxt_x0)
+        log_sample = self.log_sample_categorical(log_EV_qxt_x0) # Generate one log sample from the q(x_t|x_0)
 
         return log_sample
 
@@ -306,7 +307,7 @@ class MultinomialDiffusion(torch.nn.Module):
 
     def sample_time(self, b, device, method='uniform'):
         if method == 'importance':
-            if not (self.Lt_count > 10).all():
+            if not (self.Lt_count > 10).all(): # If all elements in self.Lt_count are large than 10, the method will be switched to importance, otherwise uniform.
                 return self.sample_time(b, device, method='uniform')
 
             Lt_sqrt = torch.sqrt(self.Lt_history + 1e-10) + 0.0001
@@ -320,25 +321,27 @@ class MultinomialDiffusion(torch.nn.Module):
             return t, pt
 
         elif method == 'uniform':
+            # Number of t is equal to batch size. Range of t: [0, self.num_timesteps)
             t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
-
+            # Normalize the t to be within[0, 1)
             pt = torch.ones_like(t).float() / self.num_timesteps
             return t, pt
         else:
             raise ValueError
 
     def _train_loss(self, x):
-        b, device = x.size(0), x.device
-
+        # b is the batch size
+        b, device = x.size(0), x.device # x.shape: [batch, 1, h, w]
+        
         if self.loss_type == 'vb_stochastic':
-            x_start = x
+            x_start = x # x_0 (real data)
 
             t, pt = self.sample_time(b, device, 'importance')
 
-            log_x_start = index_to_log_onehot(x_start, self.num_classes)
+            log_x_start = index_to_log_onehot(x_start, self.num_classes) # convert semantic id to log-onehot
 
             kl = self.compute_Lt(
-                log_x_start, self.q_sample(log_x_start=log_x_start, t=t), t)
+                log_x_start, self.q_sample(log_x_start=log_x_start, t=t), t) # q_sample provides a sample of x_t
 
             Lt2 = kl.pow(2)
             Lt2_prev = self.Lt_history.gather(dim=0, index=t)
