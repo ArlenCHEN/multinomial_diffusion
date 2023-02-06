@@ -159,8 +159,10 @@ class MultinomialDiffusion(torch.nn.Module):
         return log_probs
 
     def predict_start(self, log_x_t, t):
+        # Convert log onehot to semantic id
         x_t = log_onehot_to_index(log_x_t)
 
+        # Model forward
         out = self._denoise_fn(t, x_t)
 
         assert out.size(0) == x_t.size(0)
@@ -195,7 +197,9 @@ class MultinomialDiffusion(torch.nn.Module):
 
     def p_pred(self, log_x, t):
         if self.parametrization == 'x0':
+            # Predict the \hat{x}_0 using NN
             log_x_recon = self.predict_start(log_x, t=t)
+            # Approximate the posterior p(x_{t-1}|x_t) using q(x_{t-1}|x_t, \hat{x}_0)
             log_model_pred = self.q_posterior(
                 log_x_start=log_x_recon, log_x_t=log_x, t=t)
         elif self.parametrization == 'direct':
@@ -206,7 +210,9 @@ class MultinomialDiffusion(torch.nn.Module):
 
     @torch.no_grad()
     def p_sample(self, log_x, t):
+        # Compute the distribution q(x_{t-1}|x_t, \hat{x}_0)
         model_log_prob = self.p_pred(log_x=log_x, t=t)
+        # Sample from the obtained distribution
         out = self.log_sample_categorical(model_log_prob)
         return out
 
@@ -243,9 +249,17 @@ class MultinomialDiffusion(torch.nn.Module):
         return img
 
     def log_sample_categorical(self, logits):
+        '''
+        logits: categorical distribution
+        '''
+        # uniform noise
         uniform = torch.rand_like(logits)
+        # Convert the uniform noise to Gumbel noise
         gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
+        # Gumbel-Max: Generate a sample from the logits and the Gumbel noise --- An one-hot vector
+        # Note here we dont need the operation to be differentiable
         sample = (gumbel_noise + logits).argmax(dim=1)
+        # Convert one-hot vec to log
         log_sample = index_to_log_onehot(sample, self.num_classes)
         return log_sample
 
@@ -392,7 +406,6 @@ class MultinomialDiffusion(torch.nn.Module):
 
             t = torch.full((b,), i, device=device, dtype=torch.long)
             log_z = self.p_sample(log_z, t)
-        print()
         return log_onehot_to_index(log_z)
 
     def sample_chain(self, num_samples):
@@ -400,15 +413,20 @@ class MultinomialDiffusion(torch.nn.Module):
         device = self.log_alpha.device
         uniform_logits = torch.zeros(
             (b, self.num_classes) + self.shape, device=device)
-
+        
         zs = torch.zeros((self.num_timesteps, b) + self.shape).long()
-
+        
+        # log sample from the distribution of uniform-logits
         log_z = self.log_sample_categorical(uniform_logits)
         for i in reversed(range(0, self.num_timesteps)):
             print(f'Chain timestep {i:4d}', end='\r')
+            # Time step at i for all b samples
             t = torch.full((b,), i, device=device, dtype=torch.long)
+            
+            # reverse process (in log space)
             log_z = self.p_sample(log_z, t)
 
+            # Convert the log onehot to index
             zs[i] = log_onehot_to_index(log_z)
-        print()
+
         return zs

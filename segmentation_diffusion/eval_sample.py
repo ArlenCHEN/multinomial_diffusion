@@ -45,6 +45,7 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
+# train_loader is not used in this file
 train_loader, _, data_shape, num_classes = get_data(args)
 minibatch_data = None
 for minibatch_data in train_loader:
@@ -112,8 +113,8 @@ path_data_samples = '{}/samples/data.png'.format(eval_args.model,
 
 chain_samples = eval_args.samples
 with torch.no_grad():
+    # samples_chain shape: [diff_steps, num_samples, h, w]
     samples_chain = model.sample_chain(chain_samples)
-
 
 images = []
 for samples_i in samples_chain:
