@@ -54,6 +54,7 @@ def get_data(args):
     if args.dataset == 'cityscapes_coarse':
         data_shape = (1, 32, 64)
         num_classes = 8
+        # args.augmentation = 'shift' for training
         pil_transforms = get_augmentation(args.augmentation, args.dataset,
                                           (32, 64))
         pil_transforms = Compose(pil_transforms)
@@ -100,7 +101,7 @@ def get_data(args):
 
     # Data Loader
     train_loader = DataLoader(train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory)
-    eval_loader = DataLoader(test, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory)
+    eval_loader = DataLoader(test, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory)
 
     return train_loader, eval_loader, data_shape, num_classes
 

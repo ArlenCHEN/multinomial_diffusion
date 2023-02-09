@@ -9,6 +9,8 @@ from diffusion_utils.utils import add_parent_path
 import torchvision
 import imageio
 
+from eval_conf import eval_cfg
+
 # Data
 add_parent_path(level=1)
 from datasets.data import get_data, get_data_id, add_data_args, get_plot_transform
@@ -45,12 +47,8 @@ with open(path_args, 'rb') as f:
 ## Specify data ##
 ##################
 
-# train_loader is not used in this file
-train_loader, _, data_shape, num_classes = get_data(args)
-minibatch_data = None
-for minibatch_data in train_loader:
-    break
-assert minibatch_data is not None
+# train_loader is not used in this file; args is loaded from the save trained args
+train_loader, eval_loader, data_shape, num_classes = get_data(args)
 
 ###################
 ## Specify model ##
@@ -71,7 +69,22 @@ if torch.cuda.is_available():
 
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
+# # ========================== New Code ==========================
+# # Load testing data
+# for minibatch_data in eval_loader:
+#     model_kwargs = {}
+#     model_kwargs['gt'] = minibatch_data['gt']
+#     model_kwargs['gt_mask'] = minibatch_data['gt_mask']
+    
+#     sample_fn = model.p_sample_loop
+    
+#     result = sample_fn(
+#         model_kwargs=model_kwargs,
+#         eval_cfg=eval_cfg
+#     )
 
+
+# ========================== Original Code ==========================
 ############
 ## Sample ##
 ############

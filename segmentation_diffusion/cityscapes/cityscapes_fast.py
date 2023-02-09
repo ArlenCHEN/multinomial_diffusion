@@ -20,12 +20,12 @@ from .cityscapes import cityscapes_indices_segmentation_to_img, \
 
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-
+mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thin/000000.png'
 
 class CityscapesFast(data.Dataset):
     def __init__(self, root=ROOT, split='train', resolution=(32, 64), transform=None, only_categories=False):
         assert resolution in [(32, 64), (128, 256)]
-
+        
         H, W = resolution
 
         self.root = os.path.expanduser(root)
@@ -41,31 +41,59 @@ class CityscapesFast(data.Dataset):
 
         self.data = torch.from_numpy(
             np.load(join(self.root, 'preprocessed', split + f'_{H}x{W}.npy')))
+        
+        if self.split == 'test':
+            # Number of images
+            num_data = self.data.shape[0]
+            temp_mask = Image.open(mask_path)
+            temp_mask.load()
+            temp_mask = temp_mask.resize((resolution[1], resolution[0]), Image.NEAREST)
+            
+            # Extract a slice of the mask. np.array(temp_mask) has a shape of [resolution[1], resolution[0], 3]
+            temp_mask_arr = np.array(temp_mask)[:,:,0].astype(np.float32)/255.0
+            
+            # Add a new axis to the mask
+            temp_mask_arr = temp_mask_arr[np.newaxis, :]
+            
+            # Repeat the mask to have same number as the self.data
+            self.mask_arr = np.repeat(temp_mask_arr[None,...], num_data, axis=0)
+            
+            # Make sure the data and the mask share the same shape        
+            assert self.mask_arr.shape == self.data.shape
+        
 
     def __getitem__(self, index):
         img = self.data[index]
-
+        
         img = img.long()
         
         if self.only_categories:
             img = map_id_to_category_id[img]
         
-        if self.transform:
-            assert img.size(0) == 1
-            img = img[0]
+        if self.split == 'test':
+            mask = self.mask_arr[index]
+            # mask = mask.long()
+            return {
+                'gt': img,
+                'gt_mask': mask,
+            }
+        else:
+            if self.transform:
+                assert img.size(0) == 1
+                img = img[0]
+                
+                img = Image.fromarray(img.numpy().astype('uint8'))
+                img = self.transform(img)
 
-            img = Image.fromarray(img.numpy().astype('uint8'))
-            img = self.transform(img)
+                img = np.array(img)
 
-            img = np.array(img)
+                img = torch.tensor(img).long()
 
-            img = torch.tensor(img).long()
+                img = img.unsqueeze(0)
 
-            img = img.unsqueeze(0)
-
-        # mock_label = torch.zeros_like(img[0, 0]).int()
-        
-        return img
+            # mock_label = torch.zeros_like(img[0, 0]).int()
+            
+            return img
 
     def __len__(self):
         return len(self.data)
