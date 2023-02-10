@@ -8,6 +8,7 @@ import torchvision.utils as vutils
 from diffusion_utils.utils import add_parent_path
 import torchvision
 import imageio
+import matplotlib.pyplot as plt
 
 from eval_conf import eval_cfg
 
@@ -69,99 +70,122 @@ if torch.cuda.is_available():
 
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
-# # ========================== New Code ==========================
-# # Load testing data
-# for minibatch_data in eval_loader:
-#     model_kwargs = {}
-#     model_kwargs['gt'] = minibatch_data['gt']
-#     model_kwargs['gt_mask'] = minibatch_data['gt_mask']
-    
-#     sample_fn = model.p_sample_loop
-    
-#     result = sample_fn(
-#         model_kwargs=model_kwargs,
-#         eval_cfg=eval_cfg
-#     )
-
-
-# ========================== Original Code ==========================
-############
-## Sample ##
-############
+# ========================== New Code ==========================
 plot_transform = get_plot_transform(args)
 
+# Load testing data
+for minibatch_data in eval_loader:
+    model_kwargs = {}
+    model_kwargs['gt'] = minibatch_data['gt']
+    model_kwargs['gt_mask'] = minibatch_data['gt_mask']
+    
+    sample_fn = model.p_sample_loop_inpa
+    
+    result = sample_fn(
+        model_kwargs=model_kwargs,
+        eval_cfg=eval_cfg
+    )
+    
+    print('One sample is generated...')
+    
+    print(result.shape)
+    print(result)
+    colored_result = plot_transform(result).to(torch.uint8)
+    
+    print(colored_result.shape)
+    print(colored_result)
+    
+    # shape: (3, h, w)
+    colored_result_np = colored_result[0].detach().cpu().numpy()
+    colored_result_np = np.transpose(colored_result_np, (1,2,0))
+    
+    plt.imshow(colored_result_np)
+    plt.show()
 
-def batch_samples_to_grid(batch):
-    if len(batch.size()) == 3:
-        batch = batch.unsqueeze(1)
+    input()
+    
 
-    batch = plot_transform(batch).to(torch.uint8)
-
-    grid = torchvision.utils.make_grid(
-        batch, nrow=5, padding=2, normalize=False)
-
-    grid = grid.permute(1, 2, 0)
-    return grid
-
-
-path_samples = '{}/samples/sample_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
-if not os.path.exists(os.path.dirname(path_samples)):
-    os.mkdir(os.path.dirname(path_samples))
-
-path_data_samples = '{}/samples/data.png'.format(eval_args.model,
-                                                 checkpoint[
-                                                     'current_epoch'],
-                                                 eval_args.seed)
-
-
-# imageio.imsave(path_samples, batch_samples_to_grid(minibatch_data))
-
-# device = 'cuda' if torch.cuda.is_available() else 'cpu'
-# model = model.to(device)
-# model = model.eval()
-# if eval_args.double: model = model.double()
-#
-# samples = model.sample(eval_args.samples).cpu().float()/(2**args.num_bits - 1)
-# vutils.save_image(samples, fp=path_samples, nrow=eval_args.nrow)
-
-chain_samples = eval_args.samples
-with torch.no_grad():
-    # samples_chain shape: [diff_steps, num_samples, h, w]
-    samples_chain = model.sample_chain(chain_samples)
-
-images = []
-for samples_i in samples_chain:
-    grid = batch_samples_to_grid(samples_i)
-    images.append(grid)
-
-images = list(reversed(images))
+# # ========================== Original Code ==========================
+# ############
+# ## Sample ##
+# ############
+# plot_transform = get_plot_transform(args)
 
 
-def chain_linspace(chain, num_steps=150, repeat_last=10):
-    out = []
-    for i in np.linspace(0, len(chain)-1, num_steps):
-        idx = int(i)
-        if idx >= len(chain):
-            print('index too big')
-            idx = idx - 1
-        out.append(chain[idx])
+# def batch_samples_to_grid(batch):
+#     if len(batch.size()) == 3:
+#         batch = batch.unsqueeze(1)
 
-    # So that the animation stalls at the final output.
-    for i in range(repeat_last):
-        out.append(chain[-1])
-    return out
+#     batch = plot_transform(batch).to(torch.uint8)
+
+#     grid = torchvision.utils.make_grid(
+#         batch, nrow=5, padding=2, normalize=False)
+
+#     grid = grid.permute(1, 2, 0)
+#     return grid
 
 
-images = chain_linspace(images)
+# path_samples = '{}/samples/sample_ep{}_s{}.png'.format(eval_args.model, checkpoint['current_epoch'], eval_args.seed)
+# if not os.path.exists(os.path.dirname(path_samples)):
+#     os.mkdir(os.path.dirname(path_samples))
 
-# images.extend([images[-1], images[-1], images[-1], images[-1], images[-1]])
+# path_data_samples = '{}/samples/data.png'.format(eval_args.model,
+#                                                  checkpoint[
+#                                                      'current_epoch'],
+#                                                  eval_args.seed)
 
-# images = np.array(images)
-# images = images[np.arange(0, len(images), 10)]
+
+# # imageio.imsave(path_samples, batch_samples_to_grid(minibatch_data))
+
+# # device = 'cuda' if torch.cuda.is_available() else 'cpu'
+# # model = model.to(device)
+# # model = model.eval()
+# # if eval_args.double: model = model.double()
+# #
+# # samples = model.sample(eval_args.samples).cpu().float()/(2**args.num_bits - 1)
+# # vutils.save_image(samples, fp=path_samples, nrow=eval_args.nrow)
+
+# chain_samples = eval_args.samples
+# with torch.no_grad():
+#     # samples_chain shape: [diff_steps, num_samples, h, w]
+#     samples_chain = model.sample_chain(chain_samples)
+
+# images = []
+# for samples_i in samples_chain:
+#     print(samples_i)
+#     input()
+    
+#     grid = batch_samples_to_grid(samples_i)
+#     images.append(grid)
+
+# images = list(reversed(images))
 
 
-imageio.mimsave(path_samples[:-4] + '_chain.gif', images)
-imageio.imsave(path_samples, images[-1])
+# def chain_linspace(chain, num_steps=150, repeat_last=10):
+#     out = []
+#     for i in np.linspace(0, len(chain)-1, num_steps):
+#         idx = int(i)
+#         if idx >= len(chain):
+#             print('index too big')
+#             idx = idx - 1
+#         out.append(chain[idx])
 
-# from pygifsicle import optimize
-# optimize(path_samples[:-4] + "_chain.gif")
+#     # So that the animation stalls at the final output.
+#     for i in range(repeat_last):
+#         out.append(chain[-1])
+#     return out
+
+
+# images = chain_linspace(images)
+
+# # images.extend([images[-1], images[-1], images[-1], images[-1], images[-1]])
+
+# # images = np.array(images)
+# # images = images[np.arange(0, len(images), 10)]
+
+
+# imageio.mimsave(path_samples[:-4] + '_chain.gif', images)
+# imageio.imsave(path_samples, images[-1])
+
+# # from pygifsicle import optimize
+# # optimize(path_samples[:-4] + "_chain.gif")
