@@ -20,8 +20,8 @@ from .cityscapes import cityscapes_indices_segmentation_to_img, \
 
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thin/000000.png'
-mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
+mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thin/000000.png'
+# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
 
 class CityscapesFast(data.Dataset):
     def __init__(self, root=ROOT, split='train', resolution=(32, 64), transform=None, only_categories=False):

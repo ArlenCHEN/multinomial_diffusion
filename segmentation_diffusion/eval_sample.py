@@ -83,6 +83,15 @@ for minibatch_data in eval_loader:
     model_kwargs['gt'] = gt
     model_kwargs['gt_mask'] = gt_mask
     
+    gt_id_np = gt[0][0].detach().cpu().numpy()
+    
+    # shape: (1, h, w)
+    gt_mask_np = gt_mask[0][0].detach().cpu().numpy()
+    
+    print('gt id np shape: ', gt_id_np.shape)
+    print('gt_mask_np shape: ', gt_mask_np.shape)
+    input()
+    
     sample_fn = model.p_sample_loop_inpa
     
     result = sample_fn(
@@ -96,8 +105,6 @@ for minibatch_data in eval_loader:
     # shape: (3, h, w)
     colored_result_np = colored_result[0].detach().cpu().numpy()
     gt_color_np = gt_color[0].detach().cpu().numpy()
-    # shape: (1, h, w)
-    gt_mask_np = gt_mask[0][0].detach().cpu().numpy()
     
     colored_result_np = np.transpose(colored_result_np, (1,2,0))
     gt_color_np = np.transpose(gt_color_np, (1,2,0))
