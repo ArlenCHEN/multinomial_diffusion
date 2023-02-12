@@ -9,6 +9,7 @@ from diffusion_utils.utils import add_parent_path
 import torchvision
 import imageio
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
 from eval_conf import eval_cfg
 
@@ -76,8 +77,11 @@ plot_transform = get_plot_transform(args)
 # Load testing data
 for minibatch_data in eval_loader:
     model_kwargs = {}
-    model_kwargs['gt'] = minibatch_data['gt']
-    model_kwargs['gt_mask'] = minibatch_data['gt_mask']
+    
+    gt = minibatch_data['gt']
+    gt_mask = minibatch_data['gt_mask']
+    model_kwargs['gt'] = gt
+    model_kwargs['gt_mask'] = gt_mask
     
     sample_fn = model.p_sample_loop_inpa
     
@@ -85,19 +89,45 @@ for minibatch_data in eval_loader:
         model_kwargs=model_kwargs,
         eval_cfg=eval_cfg
     )
-    
-    print('One sample is generated...')
-    
-    print(result.shape)
-    print(result)
+
     colored_result = plot_transform(result).to(torch.uint8)
-    
-    print(colored_result.shape)
-    print(colored_result)
+    gt_color = plot_transform(gt).to(torch.uint8)
     
     # shape: (3, h, w)
     colored_result_np = colored_result[0].detach().cpu().numpy()
+    gt_color_np = gt_color[0].detach().cpu().numpy()
+    # shape: (1, h, w)
+    gt_mask_np = gt_mask[0][0].detach().cpu().numpy()
+    
     colored_result_np = np.transpose(colored_result_np, (1,2,0))
+    gt_color_np = np.transpose(gt_color_np, (1,2,0))
+    
+    fig = plt.figure(figsize=(14, 7))
+    nrow = 1
+    ncol = 3
+    
+    gs = gridspec.GridSpec(nrow, ncol,
+                        wspace=0.0, hspace=-0.56, 
+                        top=1.-0.5/(nrow+1), bottom=0.5/(nrow+1), 
+                        left=0.5/(ncol+1), right=1-0.5/(ncol+1))
+
+    ax1 = fig.add_subplot(gs[0,0])
+    im1 = ax1.imshow(gt_color_np)
+    ax1.set_yticklabels([])
+    ax1.set_xticklabels([])
+    ax1.axis('off')
+    
+    ax2 = fig.add_subplot(gs[0,1])
+    im2 = ax2.imshow(gt_mask_np)
+    ax2.set_yticklabels([])
+    ax2.set_xticklabels([])
+    ax2.axis('off')
+    
+    ax3 = fig.add_subplot(gs[0,2])
+    im3 = ax3.imshow(colored_result_np)
+    ax3.set_yticklabels([])
+    ax3.set_xticklabels([])
+    ax3.axis('off')
     
     plt.imshow(colored_result_np)
     plt.show()

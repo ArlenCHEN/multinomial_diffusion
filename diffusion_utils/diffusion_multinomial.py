@@ -158,7 +158,7 @@ class MultinomialDiffusion(torch.nn.Module):
     def q_pred(self, log_x_start, t):
         log_cumprod_alpha_t = extract(self.log_cumprod_alpha, t, log_x_start.shape)
         log_1_min_cumprod_alpha = extract(self.log_1_min_cumprod_alpha, t, log_x_start.shape)
-
+        
         log_probs = log_add_exp(
             log_x_start + log_cumprod_alpha_t,
             log_1_min_cumprod_alpha - np.log(self.num_classes)
@@ -446,6 +446,7 @@ class MultinomialDiffusion(torch.nn.Module):
         self,
         log_x,
         t,
+        device,
         eval_cfg=None,
         model_kwargs=None,
     ):
@@ -453,12 +454,13 @@ class MultinomialDiffusion(torch.nn.Module):
         
         if eval_cfg.jump_schedule.inpa_inj_sched_prev:
             # Get the mask
-            gt_mask = model_kwargs.get('gt_mask')
+            gt_mask = model_kwargs.get('gt_mask').to(device)
             assert gt_mask is not None
             
             # Get the real data
-            gt = model_kwargs.get('gt')
-            log_gt = index_to_log_onehot(gt, self.num_classes)
+            gt = model_kwargs.get('gt').to(device) # torch.int64
+            
+            log_gt = index_to_log_onehot(gt, self.num_classes) # on CPU
             
             # Get noisy gt sample from the distribution q(x_t|x_0)
             log_noisy_gt_dis = self.q_pred(log_gt, t)
@@ -469,16 +471,20 @@ class MultinomialDiffusion(torch.nn.Module):
             
             # TODO: check if this merging is in a proper position    
             x = gt_mask * noisy_gt + (1 - gt_mask) * x
-    
+            x = x.long() # .int(): torch.int32; .long(): torch.int64
+            
             log_x = index_to_log_onehot(x, self.num_classes)
             
         # Generate one sample from q(x_{t-1}|x_t)
         out = self.p_sample(log_x, t)
         
-        # Convert log onehot to index
-        id_out = log_onehot_to_index(out)
+        # # Convert log onehot to index
+        # id_out = log_onehot_to_index(out)
         
-        return id_out 
+        # # Make sure the data type is torch.int64
+        # id_out = id_out.long()
+        
+        return out 
 
     '''
     General loop for different steps.
@@ -493,8 +499,9 @@ class MultinomialDiffusion(torch.nn.Module):
             model_kwargs=model_kwargs,
             eval_cfg=eval_cfg
         ):
-            final = sample
-        return final
+            final_log_onehot = sample
+            final_id = log_onehot_to_index(final_log_onehot)
+        return final_id
     
     '''
     Return one-step result by yield
@@ -509,7 +516,7 @@ class MultinomialDiffusion(torch.nn.Module):
             (1, self.num_classes) + self.shape, device=device
         )
         
-        # Convert the uniform logits to log space
+        # Convert the uniform logits to log onehot
         image_after_step = self.log_sample_categorical(uniform_logits)
         
         self.gt_noises = None
@@ -521,33 +528,35 @@ class MultinomialDiffusion(torch.nn.Module):
                 eval_cfg.jump_schedule.jump_length,
                 eval_cfg.jump_schedule.jump_n_sample
             )
-            time_pairs = tqdm(list(zip(times[:-1], times[1:])))
+                        
+            time_pairs = list(zip(times[:-1], times[1:]))            
+            time_pairs = tqdm(time_pairs)            
+            
             for t_last, t_cur in time_pairs:
                 # generate one time value: (*1)
                 t_last_t = torch.tensor([t_last]*1, device=device)
                 if t_cur < t_last: # reverse process        
                     with torch.no_grad():
+                        # out: log onehot
                         out = self.p_sample_inpa(
                             image_after_step,
                             t_last_t,
+                            device,
                             eval_cfg=eval_cfg,
                             model_kwargs=model_kwargs
                             )
-                        # image_after_step is an id image
+                        
                         image_after_step = out
                         
                         yield out
                 else: # resampling (back to noisy data)
                     t_shift = 1
-                    # Convert id (from reverse process) to log onehot
-                    log_image_after_step = index_to_log_onehot(image_after_step)
+                    
                     # Get the distribution of q(x_{t-1}|x_t)
                     log_image_after_step_dis = self.q_pred_one_timestep(
                         image_after_step,
                         t=t_last_t+t_shift
                     )    
-                    # Get a sample from the above distribution
+                    # image_after_step: log onthot
                     image_after_step = self.log_sample_categorical(log_image_after_step_dis)
                     
-        
-        
