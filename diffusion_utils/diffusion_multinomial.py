@@ -449,8 +449,9 @@ class MultinomialDiffusion(torch.nn.Module):
         device,
         eval_cfg=None,
         model_kwargs=None,
-    ):
-        # noise = torch.randn_like(log_x)
+    ):        
+        # Generate one sample from q(x_{t-1}|x_t)
+        log_x = self.p_sample(log_x, t)
         
         if eval_cfg.jump_schedule.inpa_inj_sched_prev:
             # Get the mask
@@ -465,25 +466,17 @@ class MultinomialDiffusion(torch.nn.Module):
             # Get noisy gt sample from the distribution q(x_t|x_0)
             log_noisy_gt_dis = self.q_pred(log_gt, t)
             log_noisy_gt_sample = self.log_sample_categorical(log_noisy_gt_dis)
-            
             noisy_gt = log_onehot_to_index(log_noisy_gt_sample)
+            
             x = log_onehot_to_index(log_x)
             
             # TODO: check if this merging is in a proper position    
             x = gt_mask * noisy_gt + (1 - gt_mask) * x
             x = x.long() # .int(): torch.int32; .long(): torch.int64
             
-            log_x = index_to_log_onehot(x, self.num_classes)
-            
-        # Generate one sample from q(x_{t-1}|x_t)
-        out = self.p_sample(log_x, t)
-        
-        # # Convert log onehot to index
-        # id_out = log_onehot_to_index(out)
-        
-        # # Make sure the data type is torch.int64
-        # id_out = id_out.long()
-        
+            out = index_to_log_onehot(x, self.num_classes)
+        else:
+            out = log_x
         return out 
 
     '''
@@ -529,7 +522,8 @@ class MultinomialDiffusion(torch.nn.Module):
                 eval_cfg.jump_schedule.jump_n_sample
             )
                         
-            time_pairs = list(zip(times[:-1], times[1:]))            
+            time_pairs = list(zip(times[:-1], times[1:]))
+                        
             time_pairs = tqdm(time_pairs)            
             
             for t_last, t_cur in time_pairs:
