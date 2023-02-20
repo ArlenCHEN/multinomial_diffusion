@@ -417,13 +417,15 @@ class MultinomialDiffusion(torch.nn.Module):
         return log_onehot_to_index(log_z)
 
     def sample_chain(self, num_samples):
-        b = num_samples
-        device = self.log_alpha.device
+        b = num_samples        
+        device = self.log_alpha.device        
         uniform_logits = torch.zeros(
-            (b, self.num_classes) + self.shape, device=device)
+            (b, self.num_classes) + self.shape, device=device)        
         zs = torch.zeros((self.num_timesteps, b) + self.shape).long()
+        
         # log sample from the distribution of uniform-logits
         log_z = self.log_sample_categorical(uniform_logits)
+        
         for i in reversed(range(0, self.num_timesteps)):
             print(f'Chain timestep {i:4d}', end='\r')
             # Time step at i for all b samples
@@ -459,19 +461,19 @@ class MultinomialDiffusion(torch.nn.Module):
             assert gt_mask is not None
             
             # Get the real data
-            gt = model_kwargs.get('gt').to(device) # torch.int64
+            input = model_kwargs.get('input').to(device) # torch.int64
             
-            log_gt = index_to_log_onehot(gt, self.num_classes) # on CPU
+            log_input = index_to_log_onehot(input, self.num_classes) # on CPU
             
             # Get noisy gt sample from the distribution q(x_t|x_0)
-            log_noisy_gt_dis = self.q_pred(log_gt, t)
-            log_noisy_gt_sample = self.log_sample_categorical(log_noisy_gt_dis)
-            noisy_gt = log_onehot_to_index(log_noisy_gt_sample)
+            log_noisy_input_dis = self.q_pred(log_input, t)
+            log_noisy_input_sample = self.log_sample_categorical(log_noisy_input_dis)
+            noisy_input = log_onehot_to_index(log_noisy_input_sample)
             
             x = log_onehot_to_index(log_x)
             
             # TODO: check if this merging is in a proper position    
-            x = gt_mask * noisy_gt + (1 - gt_mask) * x
+            x = gt_mask * noisy_input + (1 - gt_mask) * x
             x = x.long() # .int(): torch.int32; .long(): torch.int64
             
             out = index_to_log_onehot(x, self.num_classes)

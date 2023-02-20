@@ -10,15 +10,21 @@ from cityscapes.cityscapes_fast import CityscapesFast, \
     cityscapes_indices_segmentation_to_img, \
     cityscapes_only_categories_indices_segmentation_to_img
 
+from nuscenes.nuscenes import nuscenes_indices_segmentation_to_img
+from nuscenes.nuscenes import nuScenes
+
 dataset_choices = {
     'cityscapes_coarse', 'cityscapes_fine',
-    'cityscapes_coarse_large', 'cityscapes_fine_large'}
+    'cityscapes_coarse_large', 'cityscapes_fine_large',
+    'nuscenes', 'nuscenes_large',
+    'rugd', 'rugd_large',
+    'rellis', 'rellis_large'}
 
 
 def add_data_args(parser):
 
     # Data params
-    parser.add_argument('--dataset', type=str, default='cityscapes_coarse',
+    parser.add_argument('--dataset', type=str, default='cityscapes_fine_large',
                         choices=dataset_choices)
 
     # Train params
@@ -28,6 +34,7 @@ def add_data_args(parser):
     parser.add_argument('--augmentation', type=str, default=None)
 
 
+# Convert indices to rgb values
 def get_plot_transform(args):
     if args.dataset in ('cityscapes_coarse', 'cityscapes_coarse_large'):
         return cityscapes_only_categories_indices_segmentation_to_img
@@ -35,6 +42,15 @@ def get_plot_transform(args):
     elif args.dataset in ('cityscapes_fine', 'cityscapes_fine_large'):
         return cityscapes_indices_segmentation_to_img
 
+    elif args.dataset in('nuscenes', 'nuscenes_large'):
+        return nuscenes_indices_segmentation_to_img
+    
+    elif args.dataset in ('rugd', 'rugd_large'):
+        pass
+    
+    elif args.dataset in ('rellis', 'rellis_large'):
+        pass
+    
     else:
         def identity(x):
             return x
@@ -96,6 +112,30 @@ def get_data(args):
             split='test', resolution=(128, 256), transform=pil_transforms,
             only_categories=False)
 
+    elif args.dataset == 'nuscenes':
+        data_shape = (1, 100, 100)
+        num_classes = 16
+        pil_transforms = get_augmentation(args.augmentation, args.dataset,
+                                          (100, 100))
+        pil_transforms = Compose(pil_transforms)
+        train = nuScenes(split='train', resolution=(100, 100), transform=pil_transforms)
+        test = nuScenes(split='test', resolution=(100, 100), transform=pil_transforms)
+
+    elif args.dataset == 'nuscenes_large':
+        pass
+    
+    elif args.dataset == 'rugd':
+        pass
+    
+    elif args.dataset == 'rugd_large':
+        pass
+    
+    elif args.dataset == 'rellis':
+        pass
+    
+    elif args.dataset == 'rellis_large':
+        pass
+    
     else:
         raise ValueError
 

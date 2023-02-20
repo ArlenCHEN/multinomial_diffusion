@@ -21,8 +21,10 @@ from .cityscapes import cityscapes_indices_segmentation_to_img, \
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 # mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thin/000000.png'
-# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
-mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000020.png'
+mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
+# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000020.png'
+
+is_inpa = True
 
 class CityscapesFast(data.Dataset):
     def __init__(self, root=ROOT, split='train', resolution=(32, 64), transform=None, only_categories=False):
@@ -44,7 +46,7 @@ class CityscapesFast(data.Dataset):
         self.data = torch.from_numpy(
             np.load(join(self.root, 'preprocessed', split + f'_{H}x{W}.npy')))
         
-        if self.split == 'test':
+        if is_inpa:
             # Number of images
             num_data = self.data.shape[0]
             temp_mask = Image.open(mask_path)
@@ -72,10 +74,12 @@ class CityscapesFast(data.Dataset):
         if self.only_categories:
             img = map_id_to_category_id[img]
         
-        if self.split == 'test':
+        # is_inpa=True only when inference
+        if is_inpa:
             mask = self.mask_arr[index]
             # mask = mask.long()
             return {
+                'input': img,
                 'gt': img,
                 'gt_mask': mask,
             }
