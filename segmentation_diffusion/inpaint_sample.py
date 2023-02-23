@@ -23,6 +23,8 @@ from diffusion_utils.base import DataParallelDistribution
 
 from scipy.interpolate import griddata
 
+import cv2 
+
 ###########
 ## Setup ##
 ###########
@@ -73,7 +75,9 @@ if torch.cuda.is_available():
 
 print('Loaded weights for model at {}/{} epochs'.format(checkpoint['current_epoch'], args.epochs))
 
-# ========================== New Code ==========================
+# ========================== New Code ==========================\
+print('In inpaint_sample, args.dataset: ', args.dataset)
+
 plot_transform = get_plot_transform(args)
 
 # Load testing data
@@ -83,6 +87,24 @@ for minibatch_data in eval_loader:
     input = minibatch_data['input']
     gt = minibatch_data['gt']
     gt_mask = minibatch_data['gt_mask']
+
+    # # ==================== ACDC data ====================   
+    # data_root = '/home/zheng/Softwares/Experiments/diff/testing_data/cityscapes'
+    # npy_path = os.path.join(data_root, 'GP020606_frame_000470_rgb_anon.npy')
+    # mask_path = os.path.join(data_root, 'mask.npy')
+    
+    # resolution = (256, 128)
+    # seg_logit = np.load(npy_path)
+    # seg_id = np.argmax(seg_logit, axis=0)
+    # print(seg_id)
+    # seg_id = cv2.resize(seg_id, resolution, interpolation=cv2.INTER_NEAREST)
+    # mask = np.load(mask_path)
+    # mask = cv2.resize(mask, resolution, interpolation=cv2.INTER_NEAREST)
+    
+    # input = torch.tensor(seg_id).unsqueeze(0).unsqueeze(0).long()
+    # gt = input
+    # gt_mask = torch.tensor(mask).unsqueeze(0).unsqueeze(0).long()
+    # # ==================== ACDC data ====================
     
     model_kwargs['input'] = input
     model_kwargs['gt'] = gt
@@ -134,8 +156,13 @@ for minibatch_data in eval_loader:
     gt = gt.cpu()
     input = input.cpu()
     
+    print('input shape: ', input.shape)
+    print('result shape: ', result.shape)
+    print('gt shape: ', gt.shape)
+    
     input_color = plot_transform(input).to(torch.uint8)
     grid_tensor_color = plot_transform(grid_tensor).to(torch.uint8)
+    result[result==15] = 1
     colored_result = plot_transform(result).to(torch.uint8)
     gt_color = plot_transform(gt).to(torch.uint8)
     

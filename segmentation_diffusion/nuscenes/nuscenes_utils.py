@@ -118,6 +118,9 @@ def make_composite(cls_maps):
     class_idx = np.arange(nc) + 1
     x = (cls_maps > 0.5).astype('float') * class_idx.reshape(-1, 1, 1)
     cls_map_composite = np.max(x, axis=0)
+    
+    cls_map_composite[cls_map_composite==2] = 1 # Label other_flat as drivable surface
+    
     return cls_map_composite
 
 

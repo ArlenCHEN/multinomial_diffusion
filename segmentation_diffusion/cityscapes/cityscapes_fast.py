@@ -69,6 +69,7 @@ class CityscapesFast(data.Dataset):
     def __getitem__(self, index):
         img = self.data[index]
         
+        # Make sure the int is torch.int64
         img = img.long()
         
         if self.only_categories:

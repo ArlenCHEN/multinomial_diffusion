@@ -116,6 +116,7 @@ with torch.no_grad():
     
 images = []
 for samples_i in samples_chain:
+    samples_i[samples_i==15] = 1
     grid = batch_samples_to_grid(samples_i)
     images.append(grid)
     

@@ -68,6 +68,11 @@ classes = [
 map_id_to_category_id = [x.category_id for x in classes]
 map_id_to_category_id = torch.tensor(map_id_to_category_id)
 
+map_id_to_train_id = [x.train_id for x in classes]
+map_id_to_train_id = torch.tensor(map_id_to_train_id)
+
+map_train_id_to_id = [x.id for x in classes]
+map_train_id_to_id = torch.tensor(map_train_id_to_id)
 
 # map_id_to_color = [(x.id, x.color) for x in classes]
 COLORS = [x.color for x in classes]
@@ -86,6 +91,14 @@ coarse_COLORS = torch.tensor(
      ]
 )
 
+new_COLORS = torch.tensor(
+  [(128, 64, 128), (244, 35, 232), (70, 70, 70), (102, 102, 156),
+    (190, 153, 153), (153, 153, 153), (250, 170, 30), (220, 220, 0),
+    (107, 142, 35), (152, 251, 152), (70, 130, 180), [220, 20, 60],
+    (255, 0, 0), (0, 0, 142), (0, 0, 70), (0, 60, 100),
+    (0, 80, 100), (0, 0, 230), (119, 11, 32)]
+)
+
 def onehot_segmentation_to_img(onehot, colors):
     indices = torch.argmax(onehot, dim=1)
     return indices_segmentation_to_img(indices, colors)
@@ -95,6 +108,9 @@ def indices_segmentation_to_img(indices, colors):
     if indices.size(1) == 1:
         # Remove single channel axis.
         indices = indices[:, 0]
+    print(indices)
+    indices = map_train_id_to_id[indices]
+    print(indices)
     rgbs = colors[indices]
     rgbs = rgbs.permute(0, 3, 1, 2)
     return rgbs

@@ -137,14 +137,18 @@ class BaseExperiment(object):
             train_dict = self.train_fn(epoch)
             self.log_train_metrics(train_dict)
 
-            # Eval
-            if (epoch+1) % self.eval_every == 0:
-                eval_dict = self.eval_fn(epoch)
-                self.log_eval_metrics(eval_dict)
-                self.eval_epochs.append(epoch)
-            else:
-                eval_dict = None
+            # # Eval
+            # # Note: there is a bug in data reading for eval --- 'split' becomes 'test' and the data is a list
+            # # Fix this bug before using Eval
+            # if (epoch+1) % self.eval_every == 0:
+            #     eval_dict = self.eval_fn(epoch)
+            #     self.log_eval_metrics(eval_dict)
+            #     self.eval_epochs.append(epoch)
+            # else:
+            #     eval_dict = None
 
+            eval_dict = None
+            
             # Log
             self.save_metrics()
             self.log_fn(epoch, train_dict, eval_dict)
