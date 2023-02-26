@@ -16,12 +16,15 @@ import lmdb # pip install lmdb
 import segmentation_diffusion.nuscenes.nuscenes_utils as nu
 from segmentation_diffusion.nuscenes.nuscenes_utils import bytes_to_array
 
+mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
+is_extra_mask = True # Same setting as the 2D Cityscapes if set as True
+
 dataroot = Path('/media/zheng/Cookie/Datasets/Segmentation/nuScenes').resolve()
 
 # # small samples are for sparse raw bev map: only for testing
 # # Note that the metadata is different from the complete data
-# gt_db_path = dataroot / Path('lmdb/samll_samples/GT_BEV_CAM_FRONT')
-# raw_db_path = dataroot / Path('lmdb/samll_samples/SPARSE_RAW_BEV_CAM_FRONT')
+# gt_db_path = dataroot / Path('lmdb/small_samples/GT_BEV_CAM_FRONT')
+# raw_db_path = dataroot / Path('lmdb/small_samples/SPARSE_RAW_BEV_CAM_FRONT')
 # nusc_metadata_path = dataroot / Path('v1.0-mini-CAM_FRONT_token.json')
 
 # Use samples when training
@@ -56,6 +59,7 @@ color_map = {i + 1: c for i, c in nusc_idx_to_color.items()}
 color_map[0] = [255, 255, 255]
 color_map[4] = [255, 255, 255]  # do not color "terrain"
 # color_map[15] = [255, 255, 255]  # uncomment this line to not color "lidar mask"
+color_map[255] = [50, 50, 50]
 
 def nuscenes_indices_segmentation_to_img(img):
     rgb = nu.color_components(img, color_map=color_map)
@@ -89,7 +93,7 @@ class nuScenes():
         elif split == 'test':
             self.split_path = self.splits_dir / 'val_roddick.txt'
             with open(self.split_path, 'r') as f:
-                self.data_samples = f.read().split() # Validation data samples
+                self.data_samples = f.read().split()[200:] # Validation data samples
             
             print('Number of validation samples: ', len(self.data_samples))
 
@@ -148,7 +152,15 @@ class nuScenes():
             bev_mask_np = np.ones(bev_raw_id_np.shape).astype(int)
             # 
             mask_pos = np.where((bev_raw_id_np==0) | (bev_raw_id_np==4))
-            bev_mask_np[mask_pos[0], mask_pos[1]] = 0            
+            bev_mask_np[mask_pos[0], mask_pos[1]] = 0 
+            
+            if is_extra_mask:
+                temp_mask = Image.open(mask_path)
+                temp_mask.load()
+                temp_mask = temp_mask.resize((self.resolution[1], self.resolution[0]), Image.NEAREST)          
+                # Extract a slice of the mask. np.array(temp_mask) has a shape of [resolution[1], resolution[0], 3]
+                temp_mask_arr = np.array(temp_mask)[:,:,0].astype(np.float32)/255.0
+                bev_mask_np = temp_mask_arr
         
         # Only apply the transform when training
         if self.split == 'train':
@@ -195,11 +207,18 @@ class nuScenes():
         
         # Return different data for testing than training
         if self.split == 'test':
-            return {
-                'input': bev_raw_id_tensor,
-                'gt': bev_gt_id_tensor,
-                'gt_mask': bev_mask_tensor
-            }
+            if is_extra_mask:
+                return {
+                    'input': bev_gt_id_tensor,
+                    'gt': bev_gt_id_tensor,
+                    'gt_mask': bev_mask_tensor
+                }
+            else:
+                return {
+                    'input': bev_raw_id_tensor,
+                    'gt': bev_gt_id_tensor,
+                    'gt_mask': bev_mask_tensor
+                }
         else:
             return bev_gt_id_tensor
 

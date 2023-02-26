@@ -16,6 +16,7 @@ from .cityscapes import ToTensorNoNorm, onehot_segmentation_to_img
 import os
 
 from .cityscapes import cityscapes_indices_segmentation_to_img, \
+    cityscapes_indices_segmentation_to_img_1, \
     cityscapes_only_categories_indices_segmentation_to_img
 
 

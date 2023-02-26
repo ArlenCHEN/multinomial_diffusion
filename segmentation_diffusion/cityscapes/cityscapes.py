@@ -71,9 +71,6 @@ map_id_to_category_id = torch.tensor(map_id_to_category_id)
 map_id_to_train_id = [x.train_id for x in classes]
 map_id_to_train_id = torch.tensor(map_id_to_train_id)
 
-map_train_id_to_id = [x.id for x in classes]
-map_train_id_to_id = torch.tensor(map_train_id_to_id)
-
 # map_id_to_color = [(x.id, x.color) for x in classes]
 COLORS = [x.color for x in classes]
 COLORS = torch.tensor(COLORS)
@@ -99,20 +96,69 @@ new_COLORS = torch.tensor(
     (0, 80, 100), (0, 0, 230), (119, 11, 32)]
 )
 
+CLASSES = ('road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
+               'traffic light', 'traffic sign', 'vegetation', 'terrain', 'sky',
+               'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
+               'bicycle')
+
+PALETTE = [[128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+           [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+           [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+           [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
+           [0, 80, 100], [0, 0, 230], [119, 11, 32]]
+
+CLASSES_1 = ('void', 'road', 'sidewalk', 'building', 'wall', 'fence', 'pole',
+               'traffic light', 'traffic sign', 'vegetation', 'terrain', 'sky',
+               'person', 'rider', 'car', 'truck', 'bus', 'train', 'motorcycle',
+               'bicycle')
+
+PALETTE_1 = [[255, 255, 255], [128, 64, 128], [244, 35, 232], [70, 70, 70], [102, 102, 156],
+           [190, 153, 153], [153, 153, 153], [250, 170, 30], [220, 220, 0],
+           [107, 142, 35], [152, 251, 152], [70, 130, 180], [220, 20, 60],
+           [255, 0, 0], [0, 0, 142], [0, 0, 70], [0, 60, 100],
+           [0, 80, 100], [0, 0, 230], [119, 11, 32]]
+
 def onehot_segmentation_to_img(onehot, colors):
     indices = torch.argmax(onehot, dim=1)
     return indices_segmentation_to_img(indices, colors)
 
+# Only for visualize input with mask
+def indices_segmentation_to_img_1(indices, mask):
+    if indices.size(1) == 1:
+        indices = indices[:, 0]
+        mask = mask[:, 0]
+    indices = indices[0]
+    mask = mask[0]
+    indices = map_id_to_train_id[indices]
+    indices += 1
+    indices[mask == 0] = 0 # Visualize the missing regions as white according to PALETTE_1
+    rgbs = np.zeros((indices.shape[0], indices.shape[1], 3), dtype=np.uint8)
+    
+    for label, color in enumerate(PALETTE_1):
+        rgbs[indices == label, :] = color
+    rgbs = torch.tensor(rgbs).unsqueeze(0)
+    rgbs = rgbs.permute(0,3,1,2)
+    return rgbs
 
 def indices_segmentation_to_img(indices, colors):
+    # input indices shape [batch, 1, h, w]
     if indices.size(1) == 1:
         # Remove single channel axis.
         indices = indices[:, 0]
-    print(indices)
-    indices = map_train_id_to_id[indices]
-    print(indices)
-    rgbs = colors[indices]
-    rgbs = rgbs.permute(0, 3, 1, 2)
+    # =========== Colorization for training ============
+    # indices = map_train_id_to_id[indices]
+    # rgbs = colors[indices]
+    # rgbs = rgbs.permute(0, 3, 1, 2)
+    
+    # =========== Colorization for inpainting ============
+    indices = indices[0]
+    indices = map_id_to_train_id[indices]
+    rgbs = np.zeros((indices.shape[0], indices.shape[1], 3), dtype=np.uint8)
+    
+    for label, color in enumerate(PALETTE):
+        rgbs[indices == label, :] = color
+    rgbs = torch.tensor(rgbs).unsqueeze(0)
+    rgbs = rgbs.permute(0,3,1,2)
     return rgbs
 
 
@@ -312,6 +358,9 @@ class Cityscapes(VisionDataset):
 
 def cityscapes_indices_segmentation_to_img(img):
     return indices_segmentation_to_img(img, colors=COLORS)
+
+def cityscapes_indices_segmentation_to_img_1(img, img_mask):
+    return indices_segmentation_to_img_1(img, img_mask)
 
 
 def cityscapes_only_categories_indices_segmentation_to_img(img):

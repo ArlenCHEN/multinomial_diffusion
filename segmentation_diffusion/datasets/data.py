@@ -8,6 +8,7 @@ from torchvision.transforms import RandomHorizontalFlip, Pad, RandomAffine, \
 
 from cityscapes.cityscapes_fast import CityscapesFast, \
     cityscapes_indices_segmentation_to_img, \
+        cityscapes_indices_segmentation_to_img_1, \
     cityscapes_only_categories_indices_segmentation_to_img
 
 from nuscenes.nuscenes import nuscenes_indices_segmentation_to_img
@@ -55,6 +56,9 @@ def get_plot_transform(args):
         def identity(x):
             return x
         return identity
+    
+def get_plot_transform_1(args):
+    return cityscapes_indices_segmentation_to_img_1
 
 
 def get_data_id(args):
