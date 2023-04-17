@@ -16,29 +16,26 @@ import lmdb # pip install lmdb
 import segmentation_diffusion.nuscenes.nuscenes_utils as nu
 from segmentation_diffusion.nuscenes.nuscenes_utils import bytes_to_array
 
-# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
-# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000020.png'
-# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000038.png'
-mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000098.png'
+mask_path = '../masks/thick/000098.png'
 
-is_extra_mask = False # Same setting as the 2D Cityscapes if set as True
+is_extra_mask = True # Additional binary mask is needed. Same setting as the 2D Cityscapes if set as True
 
 dataroot = Path('/media/zheng/Cookie/Datasets/Segmentation/nuScenes').resolve()
 
-# small samples are for sparse raw bev map: only for testing
-# Note that the metadata is different from the complete data
-gt_db_path = dataroot / Path('lmdb/samples/GT_BEV_CAM_FRONT_2')
-raw_db_path = dataroot / Path('lmdb/small_samples/SPARSE_RAW_BEV_CAM_FRONT')
-nusc_metadata_path = dataroot / Path('v1.0-mini-CAM_FRONT_token.json')
+# # small samples are for sparse raw bev map: only for testing
+# # Note that the metadata is different from the complete data
+# gt_db_path = dataroot / Path('lmdb/samples/GT_BEV_CAM_FRONT_2')
+# raw_db_path = dataroot / Path('lmdb/small_samples/SPARSE_RAW_BEV_CAM_FRONT')
+# nusc_metadata_path = dataroot / Path('v1.0-mini-CAM_FRONT_token.json')
 
 # Only true when small_samples are used
-is_small = True
+is_small = False
 
-# # Use samples when training
-# # GT_BEV_CAM_FRONT_2 is the corrected version of the data
-# gt_db_path = dataroot / Path('lmdb/samples/GT_BEV_CAM_FRONT_2')
-# raw_db_path = dataroot / Path('lmdb/samples/RAW_BEV_CAM_FRONT')
-# nusc_metadata_path = dataroot / Path('v1.0-trainval-meta-custom.json')
+# Use samples when training
+# GT_BEV_CAM_FRONT_2 is the corrected version of the data
+gt_db_path = dataroot / Path('frontal/dense/GT_BEV_CAM_FRONT_2')
+raw_db_path = dataroot / Path('unprojection/dense/RAW_BEV_CAM_FRONT')
+nusc_metadata_path = dataroot / Path('v1.0-trainval-meta-custom.json')
 
 # RGB info
 nusc_idx_to_color = {
