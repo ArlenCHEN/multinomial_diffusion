@@ -1,5 +1,11 @@
 # SePaint: Semantic Map Inpainting via Multinomial Diffusion
 
+## Abstract
+![sepaint_image](/resources/sepaint.png)
+
+Prediction beyond partial observations is crucial for robots to navigate in unknown environments because it can provide extra information regarding the surroundings beyond the current sensing range or resolution. In this work, we consider the inpainting of semantic Bird's-Eye-View maps. We propose SePaint, an inpainting model for semantic data based on generative multinomial diffusion. To maintain semantic consistency, we need to condition the prediction for the missing regions on the known regions. We propose a novel and efficient condition strategy, Look-Back Condition (LB-Con), which performs one-step look-back operations during the reverse diffusion process. By doing so, we are able to strengthen the harmonization between unknown and known parts, leading to better completion performance. We have conducted extensive experiments on different datasets, showing our proposed model outperforms commonly used interpolation methods in various robotic applications.
+![lbcon_image](/resources/lbcon.png)
+
 ## TODO
 Training and testing for V2X data
 
