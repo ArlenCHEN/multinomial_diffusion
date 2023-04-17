@@ -16,25 +16,29 @@ import lmdb # pip install lmdb
 import segmentation_diffusion.nuscenes.nuscenes_utils as nu
 from segmentation_diffusion.nuscenes.nuscenes_utils import bytes_to_array
 
-mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
-is_extra_mask = True # Same setting as the 2D Cityscapes if set as True
+# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
+# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000020.png'
+# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000038.png'
+mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000098.png'
+
+is_extra_mask = False # Same setting as the 2D Cityscapes if set as True
 
 dataroot = Path('/media/zheng/Cookie/Datasets/Segmentation/nuScenes').resolve()
 
-# # small samples are for sparse raw bev map: only for testing
-# # Note that the metadata is different from the complete data
-# gt_db_path = dataroot / Path('lmdb/small_samples/GT_BEV_CAM_FRONT')
-# raw_db_path = dataroot / Path('lmdb/small_samples/SPARSE_RAW_BEV_CAM_FRONT')
-# nusc_metadata_path = dataroot / Path('v1.0-mini-CAM_FRONT_token.json')
-
-# Use samples when training
-# GT_BEV_CAM_FRONT_2 is the corrected version of the data
+# small samples are for sparse raw bev map: only for testing
+# Note that the metadata is different from the complete data
 gt_db_path = dataroot / Path('lmdb/samples/GT_BEV_CAM_FRONT_2')
-raw_db_path = dataroot / Path('lmdb/samples/RAW_BEV_CAM_FRONT')
-nusc_metadata_path = dataroot / Path('v1.0-trainval-meta-custom.json')
+raw_db_path = dataroot / Path('lmdb/small_samples/SPARSE_RAW_BEV_CAM_FRONT')
+nusc_metadata_path = dataroot / Path('v1.0-mini-CAM_FRONT_token.json')
 
 # Only true when small_samples are used
-is_small = False
+is_small = True
+
+# # Use samples when training
+# # GT_BEV_CAM_FRONT_2 is the corrected version of the data
+# gt_db_path = dataroot / Path('lmdb/samples/GT_BEV_CAM_FRONT_2')
+# raw_db_path = dataroot / Path('lmdb/samples/RAW_BEV_CAM_FRONT')
+# nusc_metadata_path = dataroot / Path('v1.0-trainval-meta-custom.json')
 
 # RGB info
 nusc_idx_to_color = {
@@ -56,8 +60,8 @@ nusc_idx_to_color = {
 color_map = {i + 1: c for i, c in nusc_idx_to_color.items()}
 
 # Please make changes in the function of make_composite in nuscenes_utils.py if you want to remap the id
-color_map[0] = [255, 255, 255]
-color_map[4] = [255, 255, 255]  # do not color "terrain"
+color_map[0] = [200, 200, 200]
+color_map[4] = [200, 200, 200]  # do not color "terrain"
 # color_map[15] = [255, 255, 255]  # uncomment this line to not color "lidar mask"
 color_map[255] = [50, 50, 50]
 
@@ -93,7 +97,7 @@ class nuScenes():
         elif split == 'test':
             self.split_path = self.splits_dir / 'val_roddick.txt'
             with open(self.split_path, 'r') as f:
-                self.data_samples = f.read().split()[200:] # Validation data samples
+                self.data_samples = f.read().split()[5:] # Validation data samples 
             
             print('Number of validation samples: ', len(self.data_samples))
 

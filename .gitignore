@@ -1,3 +1,4 @@
 *.egg-info
 __pycache__
 data_path
+segmentation_diffusion/.ipynb_checkpoints/*

@@ -21,9 +21,10 @@ from .cityscapes import cityscapes_indices_segmentation_to_img, \
 
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thin/000000.png'
-mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
+# mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000015.png'
 # mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000020.png'
+mask_path = '/home/zheng/Softwares/RePaint/data/datasets/gt_keep_masks/thick/000038.png'
+
 
 is_inpa = True
 
@@ -45,7 +46,7 @@ class CityscapesFast(data.Dataset):
             raise RuntimeError('Dataset not found (or incomplete) at {}'.format(self.root))
 
         self.data = torch.from_numpy(
-            np.load(join(self.root, 'preprocessed', split + f'_{H}x{W}.npy')))
+            np.load(join(self.root, 'preprocessed', split + f'_{H}x{W}.npy')))[5:, :, :, :]
         
         if is_inpa:
             # Number of images

@@ -92,7 +92,8 @@ eval_args = parser.parse_args()
 path_args = '{}/args.pickle'.format(eval_args.model)
 path_check = '{}/check/checkpoint.pt'.format(eval_args.model)
 
-torch.manual_seed(eval_args.seed)
+# NOTE: Please uncomment this line if you want to have same result for different runs
+# torch.manual_seed(eval_args.seed)
 
 ###############
 ## Load args ##
@@ -285,7 +286,7 @@ for minibatch_data in eval_loader:
         fig = plt.figure(figsize=(10, 10))
         
         gs = gridspec.GridSpec(nrow, ncol,
-                        wspace=0.1, hspace=0.0, 
+                        wspace=0.1, hspace=0.1, 
                         top=1.-0.5/(nrow+1), bottom=0.5/(nrow+1), 
                         left=0.5/(ncol+1), right=1-0.5/(ncol+1))
         
